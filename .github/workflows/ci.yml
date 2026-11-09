@@ -11,30 +11,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Clean Secrets
-        run: |
-          # Удаляем невидимые символы (\r, пробелы) из секретов
-          CLEAN_USER=$(echo "${{ secrets.DOCKER_USERNAME }}" | tr -d '\r' | xargs)
-          CLEAN_PASS=$(echo "${{ secrets.DOCKER_PASSWORD }}" | tr -d '\r' | xargs)
-          echo "DH_USER=$CLEAN_USER" >> $GITHUB_ENV
-          echo "DH_PASS=$CLEAN_PASS" >> $GITHUB_ENV
-
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ env.DH_USER }}
-          password: ${{ env.DH_PASS }}
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASS: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          # Принудительно удаляем все невидимые символы (\r, пробелы) из секретов
+          CLEAN_USER=$(echo "$DOCKER_USER" | tr -d '[:space:]')
+          CLEAN_PASS=$(echo "$DOCKER_PASS" | tr -d '[:space:]')
+          
+          # Используем printf вместо echo, чтобы избежать искажения спецсимволов
+          printf '%s' "$CLEAN_PASS" | docker login -u "$CLEAN_USER" --password-stdin
 
       - name: Build and push Order Service
         uses: docker/build-push-action@v5
         with:
           context: ./order_service
           push: true
-          tags: ${{ env.DH_USER }}/order-service:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/order-service:latest
 
       - name: Build and push Restaurant Service
         uses: docker/build-push-action@v5
         with:
           context: ./restaurant_service
           push: true
-          tags: ${{ env.DH_USER }}/restaurant-service:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/restaurant-service:latest
