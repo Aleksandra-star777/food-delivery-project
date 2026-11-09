@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пицца от Александры | Доставка</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background-color: #e63946;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        header h1 { margin: 0; font-size: 28px; }
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+        .btn-main {
+            padding: 12px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #e63946;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            transition: background 0.3s;
+            box-shadow: 0 4px 6px rgba(230, 57, 70, 0.3);
+        }
+        .btn-main:hover { background-color: #d62828; }
+        
+        #loading { margin-top: 20px; font-style: italic; color: #777; display: none; }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            border-top: 4px solid #e63946;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .card h3 { margin-top: 0; color: #e63946; }
+        .card .price { font-weight: bold; font-size: 20px; margin: 10px 0; color: #333;}
+        .card .desc { color: #666; font-size: 14px; line-height: 1.4; }
+        .error-msg { color: red; font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🍕 Пицца от Александры</h1>
+        <p>Самая быстрая доставка в городе</p>
+    </header>
+
+    <div class="container">
+        <h2>Наше свежее меню</h2>
+        <button class="btn-main" onclick="getMenu()">Показать меню</button>
+        
+        <div id="loading">Загрузка меню из микросервиса...</div>
+        <div id="result" class="menu-grid"></div>
+    </div>
+
+    <script>
+        async function getMenu() {
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            
+            // Очищаем предыдущий результат и показываем загрузку
+            resultDiv.innerHTML = '';
+            loadingDiv.style.display = 'block';
+
+            try {
+                // Запрос идет к API Gateway (Nginx), который перенаправит в restaurant-service
+                const response = await fetch('/api/menu');
+                if (!response.ok) throw new Error('Ошибка сервера');
+                
+                const data = await response.json();
+                
+                // Рендерим карточки с блюдами
+                data.items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <h3>${item.name}</h3>
+                        <p class="desc">${item.desc}</p>
+                        <div class="price">${item.price}</div>
+                    `;
+                    resultDiv.appendChild(card);
+                });
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error-msg">Не удалось загрузить меню. Проверьте соединение контейнеров.</p>`;
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
